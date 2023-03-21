@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phpbb
+spec:
+  selector:
+    matchLabels:
+      app: phpbb
+  template:
+    metadata:
+      labels:
+        app: phpbb
+    spec:
+      containers:
+      - name: phpbb
+        image: bitnami/phpbb:latest
+        env:
+        - name: FIRSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: shop-info
+              key: FIRSTNAME
+        - name: LASTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: shop-info
+              key: LASTNAME
+        - name: MARIADB_HOST
+          value: "mysql"
+        - name: MARIADB_PORT_NUMBER
+          value: "3306"
+        - name: PHPBB_DATABASE_NAME
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_DATABASE
+        - name: PHPBB_DATABASE_USER
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_USER
+        - name: PHPBB_DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: MYSQL_PASSWORD
+        ports:
+        - containerPort: 80
+          name: http
+        - containerPort: 443
+          name: https
+        volumeMounts:
+        - name: phpbb-persistent-storage
+          mountPath: /bitnami/phpbb
+      volumes:
+      - name: phpbb-persistent-storage
+        persistentVolumeClaim:
+          claimName: phpbb-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: phpbb-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
